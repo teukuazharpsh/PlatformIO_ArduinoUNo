@@ -1,36 +1,48 @@
-#include <Arduino.h>
+#include <MotorDriver.h>
+MotorDriver md;
 
-// Deklarasi pin digital untuk 3 sensor IR (Anda bisa menyesuaikan nomor pin-nya)
-const int irSensor1 = 2; // IR Sensor 1 terhubung ke pin digital 2
-const int irSensor2 = 3; // IR Sensor 2 terhubung ke pin digital 3
-const int irSensor3 = 4; // IR Sensor 3 terhubung ke pin digital 4
+const int sensorKiri   = A0;
+const int sensorTengah = A1;
+const int sensorKanan  = A2;
+
+int kecepatan = 150; // Nilai PWM dasar (0-255)
 
 void setup() {
-  // Mengaktifkan komunikasi serial
+  pinMode(sensorKiri, INPUT);
+  pinMode(sensorTengah, INPUT);
+  pinMode(sensorKanan, INPUT);
   Serial.begin(9600);
-  
-  // Mengatur pin sensor sebagai jalur INPUT
-  pinMode(irSensor1, INPUT);
-  pinMode(irSensor2, INPUT);
-  pinMode(irSensor3, INPUT);
-  
-  Serial.println("Program Pembaca 3 Sensor IR Dimulai...");
 }
 
 void loop() {
-  // Membaca status masing-masing sensor (1/HIGH jika tidak ada halangan, 0/LOW jika mendeteksi objek, tergantung jenis sensornya)
-  int valSensor1 = digitalRead(irSensor1);
-  int valSensor2 = digitalRead(irSensor2);
-  int valSensor3 = digitalRead(irSensor3);
-  
-  // Menampilkan hasil bacaan ke Serial Monitor
-  Serial.print("Sensor 1: ");
-  Serial.print(valSensor1);
-  Serial.print(" | Sensor 2: ");
-  Serial.print(valSensor2);
-  Serial.print(" | Sensor 3: ");
-  Serial.println(valSensor3);
-  
-  // Jeda 500 ms (setengah detik) sebelum membaca ulang
-  delay(500);
+  int K  = digitalRead(sensorKiri);
+  int T  = digitalRead(sensorTengah);
+  int Ka = digitalRead(sensorKanan);
+
+  Serial.print("K:"); Serial.print(K);
+  Serial.print(" T:"); Serial.print(T);
+  Serial.print(" Ka:"); Serial.println(Ka);
+
+  if (T == LOW && K == HIGH && Ka == HIGH) {
+    // Garis di tengah -> Maju lurus
+    md.motor(1, FORWARD, kecepatan);
+    md.motor(2, FORWARD, kecepatan);
+  }
+  else if (K == LOW && Ka == HIGH) {
+    // Garis bergeser ke kiri -> Belok kiri
+    md.motor(1, RELEASE, 0);
+    md.motor(2, FORWARD, kecepatan);
+  }
+  else if (Ka == LOW && K == HIGH) {
+    // Garis bergeser ke kanan -> Belok kanan
+    md.motor(1, FORWARD, kecepatan);
+    md.motor(2, RELEASE, 0);
+  }
+  else if (K == HIGH && T == HIGH && Ka == HIGH) {
+    // Garis hilang -> Berhenti
+    md.motor(1, BRAKE, 0);
+    md.motor(2, BRAKE, 0);
+  }
+
+  delay(50);
 }
